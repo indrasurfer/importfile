@@ -1,0 +1,9 @@
+ 
+    function konversiId($Nomorpenjualan)
+    {
+        
+            $sql = "SELECT Id FROM Sales where SalesNumber = ?";
+            $query = $this->db->query($sql, array($Nomorpenjualan));
+            return $query->row_array();
+     
+    }
