@@ -1,8 +1,8 @@
  function upload() {
         include_once './assets/phpexcel/Classes/PHPExcel.php';
-        $fileName = time() . $_FILES['fileImport']['name'];                    
+        $fileName = time() . $_FILES['fileImport']['name'];                     // Sesuai dengan nama Tag Input/Upload
 
-        $config['upload_path'] = './fileExcel/';                            
+        $config['upload_path'] = './fileExcel/';                                // Buat folder dengan nama "fileExcel" di root folder
         $config['file_name'] = $fileName;
         $config['allowed_types'] = 'xls|xlsx|csv';
         $config['max_size'] = 10000000;
@@ -39,7 +39,9 @@
         $lastresult = $this->customer_model->lastresultcompany($this->vendorId);
         for ($row = 2; $row <= $highestRow; $row++) {                                       
             $rowData = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row, NULL, TRUE, FALSE);
-                  
+            //$rowData1 = $sheet->rangeToArray('B' . $row . ':' . $highestColumn . $row, NULL, TRUE, FALSE);
+
+            
             $seleksi = array(                                                    
                 "CompanyId" => $lastresult->CompanyId,
                 "Name" => $rowData[0][2],
@@ -62,8 +64,8 @@
                 "CreatedAt"=>date('Y-m-d H:i:s')
             );
 
-          $cekdata = $this->Sales_model->cekdataproduct($items['Name']);
-          if (empty($cekdata))
+          $cekdataproduct = $this->Sales_model->cekdataproduct($items['Name']);
+          if (empty($cekdataproduct))
             {
                 $result = $this->product_model->addProduct($items);
             }      
@@ -79,10 +81,12 @@
                 'CreatedById'=> $this->vendorId, 
                 'CreatedAt'=>date('Y-m-d H:i:s')
             );
-            
-              $cekdata = $this->Sales_model->cekdatajual($SalesInfo['SalesNumber']);
 
-            if (empty($cekdata))
+           
+              $cekdatasales = $this->Sales_model->cekdatajual($SalesInfo['SalesNumber']);
+
+       
+            if (empty($cekdatasales))
             {
                 $result = $this->Sales_model->addSales($SalesInfo);
             }  
