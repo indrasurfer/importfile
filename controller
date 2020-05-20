@@ -1,0 +1,164 @@
+ function upload() {
+        include_once './assets/phpexcel/Classes/PHPExcel.php';
+        $fileName = time() . $_FILES['fileImport']['name'];                    
+
+        $config['upload_path'] = './fileExcel/';                            
+        $config['file_name'] = $fileName;
+        $config['allowed_types'] = 'xls|xlsx|csv';
+        $config['max_size'] = 10000000;
+
+        $this->load->library('upload');
+        $this->upload->initialize($config);
+
+         if (!$this->upload->do_upload('fileImport')) {
+                $error = array('error' => $this->upload->display_errors());
+            } else {
+                $data = array('upload_data' => $this->upload->data());
+            }
+            
+            if (!empty($data['upload_data']['file_name'])) {
+                $import_xls_file = $data['upload_data']['file_name'];
+            } else {
+                $import_xls_file = 0;
+            }
+            $inputFileName = './fileExcel/' . $import_xls_file;
+
+        try {
+            $inputFileType = PHPExcel_IOFactory::identify($inputFileName);
+            $objReader = PHPExcel_IOFactory::createReader($inputFileType);
+            $objPHPExcel = $objReader->load($inputFileName);
+        } catch (Exception $e) {
+            die('Error loading file "' . pathinfo($inputFileName, PATHINFO_BASENAME) . '": ' . $e->getMessage());
+        }
+
+        $sheet = $objPHPExcel->getSheet(0);
+        $highestRow = $sheet->getHighestRow();
+        $highestColumn = $sheet->getHighestColumn();
+        $tot = 0;
+        $i = 1; 
+        $lastresult = $this->customer_model->lastresultcompany($this->vendorId);
+        for ($row = 2; $row <= $highestRow; $row++) {                                       
+            $rowData = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row, NULL, TRUE, FALSE);
+                  
+            $seleksi = array(                                                    
+                "CompanyId" => $lastresult->CompanyId,
+                "Name" => $rowData[0][2],
+                "RowStatus" => 1,
+                "CreatedById"=> $this->vendorId, 
+                "CreatedAt"=>date('Y-m-d H:i:s')
+            );
+             $cekdata = $this->Sales_model->cekdatacustomer($seleksi['Name']);
+          if (empty($cekdata))
+            {
+                $result = $this->customer_model->addCustomer1($seleksi);
+            }        
+       
+             $items = array(                                                     
+                "CompanyId" => $lastresult->CompanyId,
+                "Name" => $rowData[0][3],
+                "Status" => 1,
+                "RowStatus" => 1,
+                "CreatedById"=> $this->vendorId, 
+                "CreatedAt"=>date('Y-m-d H:i:s')
+            );
+
+          $cekdata = $this->Sales_model->cekdataproduct($items['Name']);
+          if (empty($cekdata))
+            {
+                $result = $this->product_model->addProduct($items);
+            }      
+  
+            $lastresultcustomerd = $this->customer_model->lastresultcustomeridd($seleksi['Name']);
+
+            
+             $SalesInfo = array(
+                'CompanyId'=> $lastresult->CompanyId,
+                'SalesNumber'=> $rowData[0][0], 
+                'CustomerId'=> $lastresultcustomerd->Id, 
+                'RowStatus' => 1, 
+                'CreatedById'=> $this->vendorId, 
+                'CreatedAt'=>date('Y-m-d H:i:s')
+            );
+            
+              $cekdata = $this->Sales_model->cekdatajual($SalesInfo['SalesNumber']);
+
+            if (empty($cekdata))
+            {
+                $result = $this->Sales_model->addSales($SalesInfo);
+            }  
+
+            $Nomorpenjualan = array(                                                      
+               'id' =>$rowData[0][0]   
+            );
+
+            $hasilkonversi = $this->Sales_model->konversiId($Nomorpenjualan['id']);
+            
+  
+            $lastresultproduct = $this->product_model->lastresultproductid($items['Name']);
+
+             $a = array(                                                      
+               'qty' =>$rowData[0][4]   
+            );
+
+             $b = array(                                                      
+               'harga' =>$rowData[0][5]   
+            );
+
+             $c = array(                                                      
+               'diskon' =>$rowData[0][6]   
+            );
+
+             $jumlah =$a['qty'] * $b['harga'] - $c['diskon'];
+           
+    
+             $Salesline1 = array(
+                'SalesId'=> $hasilkonversi['Id'],
+                'ProductId'=> $lastresultproduct->Id, 
+                'Qty'=> $rowData[0][4], 
+                'Price'=> $rowData[0][5],  
+                'Discount'=> $rowData[0][6], 
+                'SubTotal'=> $jumlah,   
+                'RowStatus' => 1, 
+                'CreatedById'=> $this->vendorId, 
+                'CreatedAt'=>date('Y-m-d H:i:s')
+            );
+            
+             
+          // $this->Sales_model->deletedataeksis($Salesline1['SalesId']);
+
+            $result = $this->Sales_model->addSalesitem1($Salesline1);
+            $lasttotal = $this->Sales_model->lasttotalsemua($Salesline1);
+        
+
+             $date = date('Y-m-d',PHPExcel_Shared_Date::ExcelToPHP($rowData[0][1]));
+
+            foreach ($lasttotal as $key => $value) {
+             $subtotal = array(  
+                'SalesDate'=> $date,
+                'TotalQty'=> $value['qty'], 
+                'Discount'=> $value['diskon'], 
+                'VAT'=> 0,  
+                'TotalAmount'=> $value['total'],    
+                'RowStatus' => 1, 
+                'UpdatedById'=> $this->vendorId, 
+                'UpdatedAt'=>date('Y-m-d H:i:s')
+            );
+            }
+              $result = $this->Sales_model->addSales2($subtotal, $hasilkonversi['Id']); 
+            
+            if($result == true)
+            {
+                
+                $this->session->set_flashdata('success', 'Penjualan telah berhasil diperbarui');
+          
+
+            }
+            else
+            {
+                $this->session->set_flashdata('error', 'Pembaruan Penjualan gagal');
+            }
+            
+        }
+        
+       redirect('sales');
+    }
