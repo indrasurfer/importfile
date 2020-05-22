@@ -1,9 +1,570 @@
+<?php if(!defined('BASEPATH')) exit('No direct script access allowed');
+
+class Sales_model extends CI_Model
+{
+    
+  function getActivecompany()
+    {
+
+    	$this->db->select('BaseTbl.CompanyId, Comp.Id, Comp.Name');
+        $this->db->from('CompanyPlan as BaseTbl');
+        $this->db->join('Company as Comp','Comp.Id = BaseTbl.CompanyId');
+        $query = $this->db->get();
+        return $query->result_array();
+    }  
+
+     function getproductdata()
+    {
+
+        $this->db->select('*');
+        $this->db->from('Product as BaseTbl');
+        $this->db->where('BaseTbl.RowStatus', 1);
+        $query = $this->db->get();
+        return $query->result_array();
+    }  
+
+     function getSales()
+    {
+
+        $this->db->select('*');
+        $this->db->from('Sales as BaseTbl');
+        $this->db->where('BaseTbl.RowStatus', 1);
+        $query = $this->db->get();
+        return $query->result_array();
+    }  
+
+    function getActiveplan()
+    {
+
+    	$this->db->select('BaseTbl.PlanId, Comp.Id, Comp.Name');
+        $this->db->from('CompanyPlan as BaseTbl');
+        $this->db->join('Plan as Comp','Comp.Id = BaseTbl.PlanId');
+        $query = $this->db->get();
+        return $query->result_array();
+    }  
+
+     function getActiveproduct()
+    {
+
+        $this->db->select('BaseTbl.CompanyId, Comp.Id, Comp.Name as Name, BaseTbl.Name as Product, BaseTbl.Id as IdProduct');
+        $this->db->from('Product as BaseTbl');
+        $this->db->join('Company as Comp','Comp.Id = BaseTbl.CompanyId');
+        $query = $this->db->get();
+        return $query->result_array();
+    }  
+
+    function getcompanyplan()
+	{
+
+		$sql = "SELECT CompanyPlan.Id, CompanyPlan.CompanyId, CompanyPlan.ExpiredDateTime, Company.name, Plan.name as pname FROM CompanyPlan 
+		INNER JOIN Company ON Company.id =CompanyPlan.CompanyId INNER JOIN Plan ON Plan.id = CompanyPlan.PlanId
+	     ORDER BY CompanyPlan.Id DESC";
+		$query = $this->db->query($sql);
+		return $query->result_array();
+	}
+
+
+    function addSales1($subtotal)
+    {
+       foreach ($subtotal as $sample)
+        {
+          $this->db->where('Id', $sample['Id']);
+
+            $this->db->update('Sales', [
+                'TotalQty' => $sample['TotalQty']
+            ]);
+
+        }
+        
+        return TRUE;
+
+    }
+
+
+    
+
+   function addSales2($subtotal,$lastresultsales12)
+    {
+       
+         $this->db->where('Id',$lastresultsales12);
+        $this->db->update('Sales', $subtotal);
+        return TRUE;
+    
+      
+        
+    }
+
+    function updatesale($Idsales, $Salestotal)
+    {
+       
+         $this->db->where('Id',$Idsales);
+        $this->db->update('Sales', $Salestotal);
+        return TRUE;  
+        
+    }
+     function addSales($SalesInfo)
+    {
+        $this->db->trans_start();
+        $this->db->insert('Sales', $SalesInfo);
+    
+        $this->db->trans_complete();
+        
+        return TRUE;
+    }
+
+     function addSalesitem($items)
+    {
+        $this->db->trans_start();
+        $this->db->insert('SalesLine', $items);
+    
+        $this->db->trans_complete();
+        
+        return $insert_id;
+    }
+
+
+    function cekeksisdata($lastresultsales12)
+    {
+        $this->db->trans_start();
+
+        $this->db->where_in('SalesId', $lastresultsales12);
+        $this->db->delete('SalesLine');
+        $this->db->trans_complete();
+        
+      return TRUE;
+     }
+
+     function addSalesitem1($Salesline1)
+    {
+
+        $this->db->trans_start();
+        $this->db->insert('SalesLine', $Salesline1);
+        $this->db->trans_complete();
+        return TRUE;
+    }
+
+    
+
+     function insert($Salesline1)
+{
+    $query = $this->db->query("SELECT * FROM SalesLine WHERE SalesId = '{$Salesline1['SalesId']}' ");
+    $result = $query->result_array();
+    $count = count($result);
+
+    if (empty($count)) {
+
+        $this->db->insert('SalesLine', $Salesline1); 
+    }
+    elseif ($count == 1) {
+        $this->db->where('SalesId', $Salesline1['SalesId']);
+        $this->db->update('SalesLine', $Salesline1); 
+    }
+}
+      function salesexcel($data)
+    {
+        $this->db->trans_start();
+        $this->db->insert('SalesLine', $data);
+    
+        $this->db->trans_complete();
+        
+        return $insert_id;
+    }
+
+     function editSales($SalesInfo, $Id)
+    {
+        $this->db->where('Id', $Id);
+        $this->db->update('Sales', $SalesInfo);
+        
+        return TRUE;
+    }
+
+      function updateSalesdetail($Salestotal, $Idsales)
+    {
+        $this->db->where('Id', $Idsales);
+        $this->db->update('Sales',$Salestotal);
+        
+        return TRUE;
+    }
+
+     function deleteSales($Id, $SalesInfo)
+    {
+        $this->db->where('Id', $Id);
+        $this->db->update('Sales', $SalesInfo);
+        
+        return $this->db->affected_rows();
+    }
+
+      function deleteSalesdetail($Id, $SalesInfo)
+    {
+        $this->db->where('Id', $Id);
+        $this->db->update('SalesLine', $SalesInfo);
+        
+        return $this->db->affected_rows();
+    }
+
+      function updatesaledetail($iddetail, $items)
+    {
+    
+      $this->db->where('Id', $iddetail);
+      $this->db->update('SalesLine', $items);
+
+        
+        return $this->db->affected_rows();
+    }
+
+
+
+    function getSalesdetail($Id)
+    {
+        $this->db->select('BaseTbl.CompanyId, BaseTbl.Id, BaseTbl.SalesNumber, BaseTbl.SalesDate, BaseTbl.TotalQty, BaseTbl.Discount, BaseTbl.VAT, BaseTbl.TotalAmount, Comp.Name As CompanyName, Cust.Name As CustomerName, SL.ProductId, SL.Qty, SL.Price, SL.Discount As diskon, SL.SubTotal,SL.Id As Iddetail');
+        $this->db->from('Sales as BaseTbl');
+        $this->db->join('Company as Comp','Comp.Id = BaseTbl.CompanyId');
+        $this->db->join('Customer as Cust','Cust.Id = BaseTbl.CustomerId');
+        $this->db->join('SalesLine as SL','SL.SalesId = BaseTbl.Id ');
+        $this->db->where('BaseTbl.RowStatus', 1);
+        $this->db->where('SL.RowStatus', 1);
+        $this->db->where('BaseTbl.Id', $Id);
+        $query = $this->db->get();
+        
+        return $query->result();
+
+
+    }
+
+    function getSalesInfo($Id)
+    {
+        $this->db->select('BaseTbl.CompanyId, BaseTbl.Id, BaseTbl.SalesNumber, BaseTbl.SalesDate, BaseTbl.TotalQty, BaseTbl.Discount, BaseTbl.VAT, BaseTbl.TotalAmount, Comp.Name As CompanyName, Cust.Name As CustomerName');
+        $this->db->from('Sales as BaseTbl');
+        $this->db->join('Company as Comp','Comp.Id = BaseTbl.CompanyId');
+        $this->db->join('Customer as Cust','Cust.Id = BaseTbl.CustomerId');
+        $this->db->where('BaseTbl.RowStatus', 1);
+        $this->db->where('BaseTbl.Id', $Id);
+        $query = $this->db->get();
+        
+        return $query->result();
+    }
+	 
+
+     function query_datatables($column_order,$column_search,$def_order) {   
+            $i = 0;
+            foreach ($column_search as $item) {
+                if($_POST['search']['value']) {
+                    if($i===0){
+                        $this->db->group_start();
+                        $this->db->like($item, $_POST['search']['value']);
+                    } else {
+                        $this->db->or_like($item, $_POST['search']['value']);
+                    }
+
+                    if(count($column_search) - 1 == $i)
+                        $this->db->group_end();
+                }
+                $i++;
+            }
+             
+            if(isset($_POST['order'])) {
+                $this->db->order_by($column_order[$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
+            } else if (isset($order)) {
+                $order = $def_order;
+                $this->db->order_by(key($order), $order[key($order)]);
+            }
+        }
+
+     function sql_data($Id){
+          $this->db->select('BaseTbl.Id, BaseTbl.SalesNumber, BaseTbl.SalesDate, BaseTbl.TotalQty, Comp.Name as CompanyName, Cust.Name as CustomerName, BaseTbl.Discount, BaseTbl.VAT, BaseTbl.TotalAmount');
+          $this->db->from('Sales as BaseTbl');
+          $this->db->join('Company as Comp','Comp.Id = BaseTbl.CompanyId');
+          $this->db->join('Customer as Cust','Cust.Id = BaseTbl.CustomerId');
+          $this->db->where('BaseTbl.RowStatus', 1);
+          $this->db->where('BaseTbl.CreatedById', $Id);
+        }
+        
+     function datatables_get($Id){
+            $column_order = array('BaseTbl.SalesNumber','BaseTbl.SalesDate','Cust.Name as CustomerName');
+            $column_search = array('BaseTbl.SalesNumber,','BaseTbl.SalesDate','Cust.Name as CustomerName');
+            $def_order = array('BaseTbl.SalesNumber' => 'desc', );
+            
+            $this->sql_data($Id);
+            $this->query_datatables($column_order,$column_search,$def_order);
+            if($_POST['length'] != -1)
+                $this->db->limit($_POST['length'], $_POST['start']);
+            $query = $this->db->get();
+            return $query->result_array();
+        }
+     
+     function count_filter($Id)
+        {
+            $column_order = array('BaseTbl.SalesNumber','BaseTbl.SalesDate','Cust.Name as CustomerName');
+            $column_search = array('BaseTbl.SalesNumber,','BaseTbl.SalesDate','Cust.Name as CustomerName');
+            $def_order = array('BaseTbl.SalesNumber' => 'desc');
+
+            $this->sql_data($Id);
+            $this->query_datatables($column_order,$column_search,$def_order);
+            $query = $this->db->get();
+            return $query->num_rows();
+        }
+     
+     function count_all($Id)
+        {
+            $this->sql_data($Id);
+            return $this->db->count_all_results();
+        }
+
+
+    
+     function getproduct($postData=null)
+    {
+        $company = $postData['company'];
+
+        $sql = "SELECT * FROM Product WHERE CompanyId = $company AND RowStatus = 1 ORDER BY Id";
+        $query = $this->db->query($sql);
+        return $query->result_array();
+    } 
+
+     function getnameproduct($Id)
+    {
+
+        $sql = "SELECT Product.Id, Product.Name FROM Product INNER JOIN AppUser ON AppUser.CompanyId = Product.CompanyId WHERE AppUser.Id = $Id AND Product.RowStatus = 1 ORDER BY Id";
+        $query = $this->db->query($sql);
+        return $query->result_array();
+    } 
+
+     function buat_kode($Id)
+     {
+          $this->db->select('RIGHT(Sales.SalesNumber,4) as SalesNumber', FALSE);
+          $this->db->order_by('SalesNumber','DESC');    
+          $this->db->limit(1);    
+          $query = $this->db->get('Sales');     
+          if($query->num_rows() <> 0){      
+                  
+               $data = $query->row();      
+               $kode = intval($data->SalesNumber) + 1; 
+          }
+          else{      
+               $kode = 1;  
+          }
+              $user_id = $Id;
+              $tgl=date('Y'); 
+              $batas = str_pad($kode, 4, "0", STR_PAD_LEFT);    
+              $kodetampil = "INV/".$tgl."/NP-".$batas; 
+              return $kodetampil;  
+         }
  
-    function konversiId($Nomorpenjualan)
+   
+
+    
+    function getcompanyData($Id = null)
+    {
+        if($Id) {
+            $sql = "SELECT * FROM AppUser where Id = ?";
+            $query = $this->db->query($sql, array($Id));
+            return $query->row_array();
+        }
+
+        $sql = "SELECT * FROM AppUser ORDER BY Id DESC";
+        $query = $this->db->query($sql);
+        return $query->result_array();
+    }
+
+     function datadetilupdate($Id = null)
+    {
+        if($Id) {
+            $sql = "SELECT * FROM SalesLine where Id = ?";
+            $query = $this->db->query($sql, array($Id));
+            return $query->row_array();
+        }
+
+        $sql = "SELECT * FROM SalesLine ORDER BY Id DESC";
+        $query = $this->db->query($sql);
+        return $query->result_array();
+    }
+
+
+     function datadetil($SalesId = null)
+    {
+        if($SalesId) {
+            $sql = "SELECT * FROM Sales where Id = ?";
+            $query = $this->db->query($sql, array($SalesId));
+            return $query->row_array();
+        }
+
+        $sql = "SELECT * FROM Sales ORDER BY Id DESC";
+        $query = $this->db->query($sql);
+        return $query->result_array();
+    }
+    function getSalesEdit($Id = null)
+    {
+        if($Id) {
+            $sql = "SELECT * FROM Sales where Id = ?";
+            $query = $this->db->query($sql, array($Id));
+            return $query->row_array();
+        }
+
+        $sql = "SELECT * FROM Sales ORDER BY Id DESC";
+        $query = $this->db->query($sql);
+        return $query->result_array();
+    }
+
+    function getSalesEditdetail($Id = null)
+    {
+        if($Id) {
+            $sql = "SELECT * FROM SalesLine where SalesId = ?";
+            $query = $this->db->query($sql, array($Id));
+            return $query->row_array();
+        }
+
+        $sql = "SELECT * FROM SalesLine ORDER BY Id DESC";
+        $query = $this->db->query($sql);
+        return $query->result_array();
+    }
+  
+  
+   function create($no, $status,$id )
+    {
+        $lastresult = $this->Sales_model->lastresultId($no);
+        $count_product = count($this->input->post('product[]'));
+        for($x = 0; $x < $count_product; $x++) {
+            
+            $items = array(
+               'SalesId' => $lastresult->Id,
+                'ProductId' =>$this->input->post('product')[$x],
+                'Qty' => $this->input->post('qty')[$x],
+                'Price' => $this->input->post('harga')[$x],
+                'Discount' => $this->input->post('diskon')[$x],
+                'SubTotal' => $this->input->post('jumlah')[$x],
+                'RowStatus' => $status,
+                'CreatedById'=> $id, 
+                'CreatedAt'=>date('Y-m-d H:i:s')
+            );
+
+            $this->db->insert('SalesLine', $items);
+        }
+
+
+    }
+
+     function save_products(){
+        $data = array(
+                'product_code'  => $this->input->post('product_code'), 
+                'product_name'  => $this->input->post('product_name'), 
+                'product_price' => $this->input->post('price'), 
+            );
+        $result=$this->db->insert('product',$data);
+        return $result;
+    }
+
+      function ceksalesline($Salesline)
+
+
+    {
+        $query = "SELECT SalesId FROM SalesLine WHERE SalesId IN ($Salesline)";
+
+       
+    }
+
+
+    function lastresultId($no)
+    {
+        $this->db->select('BaseTbl.Id');
+        $this->db->where('BaseTbl.SalesNumber', $no);
+        $this->db->order_by('BaseTbl.id', 'DESC');
+        $this->db->limit(1);
+        $query = $this->db->get('Sales as BaseTbl');
+
+        return $query->row();
+    }
+    
+   
+  
+
+    public function ceksemua($Salesline1)
+    {
+        if($Salesline1) {
+            $sql = "SELECT * FROM SalesLine WHERE SalesId = ?";
+            $query = $this->db->query($sql, array($Salesline1));
+            return $query->row_array();
+        }
+
+        $sql = "SELECT * FROM SalesLine ORDER BY SalesId DESC";
+        $query = $this->db->query($sql);
+        return $query->result_array();
+    }
+
+
+      function cekdatacustomer($seleksi)
+    {
+        
+            $sql = "SELECT Id,Name FROM Customer where Name = ?";
+            $query = $this->db->query($sql, array($seleksi));
+            return $query->row_array();
+
+    }
+
+
+     function cekdataproduct($items)
+    {
+        
+            $sql = "SELECT Id,Name FROM Product where Name = ?";
+            $query = $this->db->query($sql, array($items));
+            return $query->row_array();
+ 
+
+    }
+
+     function cekdatajual($Salesinfo)
+    {
+        
+            $sql = "SELECT * FROM Sales where SalesNumber = ?";
+            $query = $this->db->query($sql, array($Salesinfo));
+            return $query->row_array();
+ 
+
+    }
+
+
+  
+  function lasttotalsemua($Salesline1)
+    {
+       $sql = 'SELECT Id, SUM(Qty) AS qty, SUM(Discount) AS diskon, SUM(Price * Qty) AS totalharga, SUM(Price * Qty - Discount) AS total FROM SalesLine where SalesId = ? AND RowStatus = ? AND CreatedById = ?'; 
+       $query = $this->db->query($sql, array($Salesline1['SalesId'], $Salesline1['RowStatus'], $Salesline1['CreatedById'] ));
+       return $query->result_array();
+        
+
+    }
+
+
+
+    public function deletedataeksis($hasil){
+        if(is_array($hasil)){
+            $this->db->where_in('SalesId', $hasil);
+        }else{
+            $this->db->where('SalesId', $hasil);
+        }
+        $delete = $this->db->delete('SalesLine');
+        return $delete?true:false;
+    }
+
+     
+
+      function konversiId($Nomorpenjualan)
     {
         
             $sql = "SELECT Id FROM Sales where SalesNumber = ?";
             $query = $this->db->query($sql, array($Nomorpenjualan));
-            return $query->row_array();
+
+            return $query->result();
      
     }
+
+   
+    function ceknama($Salesline1){
+    $this->db->where('SalesId',$Salesline1['SalesId']); 
+    $this->db->where('ProductId',$Salesline1['ProductId']); 
+    return $this->db->get("SalesLine"); 
+}
+  
+      
+
+}
+
+?>
