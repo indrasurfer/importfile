@@ -89,16 +89,30 @@
             if (empty($cekdatasales))
             {
                 $result = $this->Sales_model->addSales($SalesInfo);
-            }  
 
-            $Nomorpenjualan = array(                                                      
+          
+            }  
+            $cekdatasales = $this->Sales_model->cekdatajual($SalesInfo['SalesNumber']);
+
+       
+            
+           
+              $Nomorpenjualan = array(                                                      
                'id' =>$rowData[0][0]   
             );
 
-            $hasilkonversi = $this->Sales_model->konversiId($Nomorpenjualan['id']);
-            
-  
-            $lastresultproduct = $this->product_model->lastresultproductid($items['Name']);
+           // $hasilkonversi1 = $this->Sales_model->konversiId($Nomorpenjualan['id']);
+          
+            // foreach ($hasilkonversi1 as $uf)
+            // {
+            //   $Id1 = $uf->Id; 
+            //  }
+             
+              $hasil = $this->Sales_model->konvers($Nomorpenjualan['id']);
+           
+
+
+            $bg = $this->Sales_model->asw($SalesInfo['SalesNumber']);
 
              $a = array(                                                      
                'qty' =>$rowData[0][4]   
@@ -112,11 +126,17 @@
                'diskon' =>$rowData[0][6]   
             );
 
-             $jumlah =$a['qty'] * $b['harga'] - $c['diskon'];
-           
-    
-             $Salesline1 = array(
-                'SalesId'=> $hasilkonversi['Id'],
+
+              $Nomo = array(                                                      
+               'id' =>$rowData[0][0]   
+            );
+
+           $jumlah =$a['qty'] * $b['harga'] - $c['diskon'];
+           $lastresultproduct = $this->product_model->lastresultproductid($items['Name']);
+
+          //for ($i = 0; $i < count($cekdatasales); $i++) {
+           $Salesline1 = array(
+                'SalesId'=>  $bg->Id,
                 'ProductId'=> $lastresultproduct->Id, 
                 'Qty'=> $rowData[0][4], 
                 'Price'=> $rowData[0][5],  
@@ -126,12 +146,21 @@
                 'CreatedById'=> $this->vendorId, 
                 'CreatedAt'=>date('Y-m-d H:i:s')
             );
-            
-             
-          // $this->Sales_model->deletedataeksis($Salesline1['SalesId']);
+        
 
+          // 
+            $hasi = $this->Sales_model->ceknama($Salesline1);
+
+           if($hasi->num_rows()>0){
+          
+            $this->Sales_model->deletedataeksis($hasil['Id']);
+          }
+            $hasi1 = $this->Sales_model->ceknama($Salesline1);
+            if($hasi1->num_rows()===0){
+            
             $result = $this->Sales_model->addSalesitem1($Salesline1);
-            $lasttotal = $this->Sales_model->lasttotalsemua($Salesline1);
+         }
+             $lasttotal = $this->Sales_model->lasttotalsemua($Salesline1);
         
 
              $date = date('Y-m-d',PHPExcel_Shared_Date::ExcelToPHP($rowData[0][1]));
@@ -148,7 +177,7 @@
                 'UpdatedAt'=>date('Y-m-d H:i:s')
             );
             }
-              $result = $this->Sales_model->addSales2($subtotal, $hasilkonversi['Id']); 
+              $result = $this->Sales_model->addSales2($subtotal, $bg->Id); 
             
             if($result == true)
             {
