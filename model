@@ -546,16 +546,15 @@ class Sales_model extends CI_Model
 
      
 
-      function konversiId($Nomorpenjualan)
+      function konvers($Nomorpenjualan)
     {
         
             $sql = "SELECT Id FROM Sales where SalesNumber = ?";
             $query = $this->db->query($sql, array($Nomorpenjualan));
 
-            return $query->result();
+            return $query->row_array();
      
     }
-
    
     function ceknama($Salesline1){
     $this->db->where('SalesId',$Salesline1['SalesId']); 
@@ -563,7 +562,16 @@ class Sales_model extends CI_Model
     return $this->db->get("SalesLine"); 
 }
   
-      
+      function asw($SalesInfo)
+    {
+        $this->db->select('Id');
+        $query =$this->db->get_where('Sales', array('SalesNumber' => $SalesInfo));
+        $this->db->order_by('Id', 'DESC');
+     
+
+        return $query->row();
+    }
+    
 
 }
 
